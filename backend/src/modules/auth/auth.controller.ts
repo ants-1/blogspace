@@ -12,15 +12,15 @@ import { UserModel } from "../users/user.model";
 const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userData = req.body;
-    registerUserSchema.parse(userData);
+    await registerUserSchema.parse(userData);
 
     const user = await authService.register(req.body);
 
     res.status(201).json(user);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      const formattedError = z.prettifyError(error);
-      return res.status(400).json({ error: formattedError });
+      const validationError = z.prettifyError(error);
+      return res.status(400).json({ error: validationError });
     }
 
     res.status(500).json({ error: error.message });
@@ -49,8 +49,8 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     res.status(200).json({ user, token: accessToken });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      const formattedError = z.prettifyError(error);
-      return res.status(400).json({ error: formattedError });
+      const validationError = z.prettifyError(error);
+      return res.status(400).json({ error: validationError });
     }
 
     res.status(500).json({ error: error.message });

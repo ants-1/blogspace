@@ -1,8 +1,9 @@
 import express from "express";
-import authRoutes from "./modules/auth/auth.routes";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
+import authRoutes from "./modules/auth/auth.routes";
+import userRoutes from "./modules/users/user.routes";
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.use(cookieParser());
 
 // Routes
 app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
 
 export default app;
