@@ -5,6 +5,7 @@ import helmet from "helmet";
 import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/users/user.routes";
 import postRoutes from "./modules/posts/post.routes";
+import commentRoutes from "./modules/comments/comment.routes";
 
 const app = express();
 
@@ -23,5 +24,6 @@ app.use(cookieParser());
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
+app.use("/posts/:postId/comments", commentRoutes);
 
 export default app;

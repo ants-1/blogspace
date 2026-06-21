@@ -49,7 +49,6 @@ const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     await updateUserSchema.parse(userData);
 
     const updatedUser = await userService.updateUser(userData);
-    console.log(updatedUser);
 
     if (!updatedUser) {
       return res.status(404).json({ error: "User not found." });

@@ -10,9 +10,16 @@ const getPosts = async () => {
 };
 
 const getPost = async (id: string) => {
-  const post: IPost | null = await PostModel.findById(id)
+  const post = await PostModel.findById(id)
     .populate("likes", "username avatar")
-    .populate("dislikes", "username avatar");
+    .populate("dislikes", "username avatar")
+    .populate({
+      path: "comments",
+      populate: {
+        path: "author",
+        select: "username avatar",
+      },
+    });
 
   return post;
 };
