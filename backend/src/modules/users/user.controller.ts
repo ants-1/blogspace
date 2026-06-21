@@ -7,10 +7,10 @@ import {
   updateUserSchema,
   userIdSchema,
 } from "./user.schema";
-import { FollowingParams, UserParams } from "../../types/types";
+import { FollowingParams, IdParams } from "../../types/types";
 
 const getUser = async (
-  req: Request<UserParams>,
+  req: Request<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -99,7 +99,7 @@ const updateUserPassword = async (
 };
 
 const getFollowers = async (
-  req: Request<UserParams>,
+  req: Request<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {
@@ -125,7 +125,7 @@ const getFollowers = async (
 };
 
 const getFollowings = async (
-  req: Request<UserParams>,
+  req: Request<IdParams>,
   res: Response,
   next: NextFunction,
 ) => {

@@ -1,4 +1,4 @@
-export type UserParams = {
+export type IdParams = {
   id: string;
 };
 
