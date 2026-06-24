@@ -7,7 +7,7 @@ import {
 } from "../../middleware/auth.middleware";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { UserModel } from "../users/user.model";
-import { createReponse } from "../../utils/createReponse";
+import { createResponse } from "../../utils/createResponse";
 import asyncHandler from "express-async-handler";
 import { AppError } from "../../exceptions/AppError";
 
@@ -17,7 +17,7 @@ const register = asyncHandler(
 
     const result = await authService.register(userData);
 
-    res.status(201).json(createReponse(true, result, null));
+    res.status(201).json(createResponse(true, result, null));
   },
 );
 
@@ -41,7 +41,7 @@ const login = asyncHandler(
 
     res
       .status(200)
-      .json(createReponse(true, { user: result, token: accessToken }, null));
+      .json(createResponse(true, { user: result, token: accessToken }, null));
   },
 );
 
@@ -53,7 +53,7 @@ const logout = asyncHandler(
       sameSite: "strict",
     });
 
-    res.status(200).json(createReponse(true, "Logged out successfully", null));
+    res.status(200).json(createResponse(true, "Logged out successfully", null));
   },
 );
 
@@ -78,7 +78,7 @@ const refresh = asyncHandler(
 
     const newAccessToken = await generateAccessToken(user);
 
-    res.status(200).json(createReponse(true, { token: newAccessToken }, null));
+    res.status(200).json(createResponse(true, { token: newAccessToken }, null));
   },
 );
 

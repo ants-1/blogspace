@@ -5,6 +5,7 @@ import { rateLimiter } from "../../middleware/rateLimit.middleware";
 const router = express.Router();
 
 // User routes
+router.get("/", rateLimiter, userController.getUsers);
 router.get("/:id", rateLimiter, userController.getUser);
 router.put("/:id", rateLimiter, userController.updateUser);
 router.put("/:id/password", rateLimiter, userController.updateUserPassword);

@@ -1,5 +1,19 @@
 import { Types } from "mongoose";
 import { UserModel, IUser } from "./user.model";
+import { AppError } from "../../exceptions/AppError";
+
+const getUsers = async () => {
+  const users: IUser[] | null = await UserModel.find()
+    .select("-password")
+    .populate("followers", "username avatar")
+    .populate("following", "username avatar");
+
+  if (!users) {
+    throw new AppError("Users not found", 404);
+  }
+
+  return { users };
+};
 
 const getUser = async (id: any) => {
   const user: IUser | null = await UserModel.findById(id)
@@ -7,7 +21,11 @@ const getUser = async (id: any) => {
     .populate("followers", "username avatar")
     .populate("following", "username avatar");
 
-  return user;
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  return { user };
 };
 
 const updateUser = async (userData: any) => {
@@ -16,7 +34,7 @@ const updateUser = async (userData: any) => {
   const user: IUser | null = await UserModel.findById(id);
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   // Check if username exist already
@@ -27,7 +45,7 @@ const updateUser = async (userData: any) => {
     });
 
     if (existingUsername) {
-      throw new Error("Username already in use");
+      throw new AppError("Username already in use", 409);
     }
 
     user.username = username;
@@ -41,7 +59,7 @@ const updateUser = async (userData: any) => {
     });
 
     if (existingEmail) {
-      throw new Error("Email already iun use.");
+      throw new AppError("Email already in use", 409);
     }
 
     user.email = email;
@@ -58,7 +76,7 @@ const updateUser = async (userData: any) => {
   await user.save();
   const updatedUser = await UserModel.findById(id).select("-password");
 
-  return updatedUser;
+  return { user: updatedUser };
 };
 
 const updateUserPassword = async (userData: any) => {
@@ -67,13 +85,13 @@ const updateUserPassword = async (userData: any) => {
   const user: IUser | null = await UserModel.findById(id).select("+password");
 
   if (!user) {
-    return;
+    throw new AppError("User not found");
   }
 
   const isMatch = await user.comparePassword(currentPassword);
 
   if (!isMatch) {
-    throw new Error("Current password is incorrect");
+    throw new AppError("Current password is incorrect", 401);
   }
 
   user.password = newPassword;
@@ -92,10 +110,10 @@ const getFollowers = async (id: string) => {
   );
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
-  return user.followers;
+  return { followers: user.followers };
 };
 
 const getFollowings = async (id: string) => {
@@ -105,22 +123,22 @@ const getFollowings = async (id: string) => {
   );
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
-  return user.following;
+  return { follwings: user.following };
 };
 
 const toggleFollowing = async (id: string, followingId: string) => {
   if (id === followingId) {
-    throw new Error("You cannot follow yourself");
+    throw new AppError("You cannot follow yourself", 400);
   }
 
   const currentUser = await UserModel.findById(id);
   const followingUser = await UserModel.findById(followingId);
 
   if (!currentUser || !followingUser) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   const isFollowing = currentUser.following?.some(
@@ -159,6 +177,7 @@ const toggleFollowing = async (id: string, followingId: string) => {
 };
 
 export default {
+  getUsers,
   getUser,
   updateUser,
   updateUserPassword,

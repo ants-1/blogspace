@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import userService from "./user.service";
-import * as z from "zod";
 import {
   toggleFollowingSchema,
   updateUserPasswordSchema,
@@ -8,174 +7,85 @@ import {
   userIdSchema,
 } from "./user.schema";
 import { FollowingParams, IdParams } from "../../types/types";
+import asyncHandler from "express-async-handler";
+import { createResponse } from "../../utils/createResponse";
 
-const getUser = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    await userIdSchema.parse({ id });
+const getUsers = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await userService.getUsers();
 
-    const user = await userService.getUser(id);
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
-    }
+const getUser = asyncHandler(
+  async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    const { id } = await userIdSchema.parse(req.params);
 
-    res.status(200).json(user);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+    const result = await userService.getUser(id);
 
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id } = req.params;
-    const { username, email, bio, avatar } = req.body;
-    const userData = {
-      id,
-      username,
-      email,
-      bio,
-      avatar,
-    };
-    await updateUserSchema.parse(userData);
+const updateUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userData = await updateUserSchema.parse({
+      id: req.params.id,
+      ...req.body,
+    });
 
-    const updatedUser = await userService.updateUser(userData);
+    const result = await userService.updateUser(userData);
 
-    if (!updatedUser) {
-      return res.status(404).json({ error: "User not found." });
-    }
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-    res.status(200).json(updatedUser);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+const updateUserPassword = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userData = await updateUserPasswordSchema.parse({
+      id: req.params.id,
+      ...req.body,
+    });
 
-    res.status(500).json({ error: error.message });
-  }
-};
+    const result = await userService.updateUserPassword(userData);
 
-const updateUserPassword = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    const { currentPassword, newPassword } = req.body;
-    const userData = {
-      id,
-      currentPassword,
-      newPassword,
-    };
-    await updateUserPasswordSchema.parse(userData);
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-    const user = await userService.updateUserPassword(userData);
+const getFollowers = asyncHandler(
+  async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    const { id } = await userIdSchema.parse(req.params);
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
-    }
+    const result = await userService.getFollowers(id);
 
-    res.status(200).json(user);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-    res.status(500).json({ error: error.message });
-  }
-};
+const getFollowings = asyncHandler(
+  async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    const { id } = await userIdSchema.parse(req.params);
 
-const getFollowers = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    await userIdSchema.parse({ id });
+    const result = await userService.getFollowings(id);
 
-    const userFollowers = await userService.getFollowers(id);
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-    if (!userFollowers) {
-      return res.status(404).json({ error: "User not found." });
-    }
+const toggleFollowing = asyncHandler(
+  async (req: Request<FollowingParams>, res: Response, next: NextFunction) => {
+    const { id, followingId } = toggleFollowingSchema.parse(req.params);
 
-    res.status(200).json({ followers: userFollowers });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+    const result = await userService.toggleFollowing(id, followingId);
 
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const getFollowings = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    await userIdSchema.parse({ id });
-
-    const userFollowings = await userService.getFollowings(id);
-
-    if (!userFollowings) {
-      return res.status(404).json({ error: "User not found." });
-    }
-
-    res.status(200).json({ followings: userFollowings });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
-
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const toggleFollowing = async (
-  req: Request<FollowingParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id, followingId } = req.params;
-    await toggleFollowingSchema.parse({ id, followingId });
-
-    const toggleFollowing = await userService.toggleFollowing(id, followingId);
-
-    if (!toggleFollowing) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    res.status(200).json(toggleFollowing);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
-
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
 export default {
+  getUsers,
   getUser,
   updateUser,
   updateUserPassword,

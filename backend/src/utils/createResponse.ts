@@ -1,4 +1,4 @@
-export const createReponse = (
+export const createResponse = (
   success: any,
   data: any = null,
   error: any = null,
