@@ -11,7 +11,10 @@ import { createResponse } from "../../utils/createResponse";
 
 const getPosts = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await postService.getPosts();
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const result = await postService.getPosts(page, limit);
 
     res.status(200).json(createResponse(true, result, null));
   },

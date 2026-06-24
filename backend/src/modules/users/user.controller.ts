@@ -12,7 +12,10 @@ import { createResponse } from "../../utils/createResponse";
 
 const getUsers = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await userService.getUsers();
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const result = await userService.getUsers(page, limit);
 
     res.status(200).json(createResponse(true, result, null));
   },

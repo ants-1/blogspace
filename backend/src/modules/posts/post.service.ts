@@ -2,12 +2,26 @@ import { AppError } from "../../exceptions/AppError";
 import { UserModel, IUser } from "../users/user.model";
 import { PostModel, IPost } from "./post.model";
 
-const getPosts = async () => {
+const getPosts = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
   const posts: IPost[] | null = await PostModel.find()
     .populate("likes", "username avatar")
-    .populate("dislikes", "username avatar");
+    .populate("dislikes", "username avatar")
+    .skip(skip)
+    .limit(limit);
 
-  return { posts };
+  const total = await UserModel.countDocuments();
+
+  return {
+    posts,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    },
+  };
 };
 
 const getPost = async (id: string) => {

@@ -2,17 +2,27 @@ import { Types } from "mongoose";
 import { UserModel, IUser } from "./user.model";
 import { AppError } from "../../exceptions/AppError";
 
-const getUsers = async () => {
+const getUsers = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+
   const users: IUser[] | null = await UserModel.find()
     .select("-password")
     .populate("followers", "username avatar")
-    .populate("following", "username avatar");
+    .populate("following", "username avatar")
+    .skip(skip)
+    .limit(limit);
 
-  if (!users) {
-    throw new AppError("Users not found", 404);
-  }
+  const total = await UserModel.countDocuments();
 
-  return { users };
+  return {
+    users,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    },
+  };
 };
 
 const getUser = async (id: any) => {
