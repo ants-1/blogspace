@@ -71,7 +71,7 @@ const updatePost = async (id: string, updatedData: any) => {
     throw new AppError("Post not found");
   }
 
-  return { user: updatedPost };
+  return { post: updatedPost, message: "Post successfully updated" };
 };
 
 const deletePost = async (id: string) => {

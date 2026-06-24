@@ -1,6 +1,7 @@
 import { UserModel, IUser } from "../users/user.model";
 import { PostModel, IPost } from "../posts/post.model";
 import { CommentModel, IComment } from "./comment.model";
+import { AppError } from "../../exceptions/AppError";
 
 const createComment = async (commentData: any) => {
   const { postId, content, author } = commentData;
@@ -8,13 +9,13 @@ const createComment = async (commentData: any) => {
   const user: IUser | null = await UserModel.findById(author);
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   const post: IPost | null = await PostModel.findById(postId);
 
   if (!post) {
-    return;
+    throw new AppError("Post not found", 404);
   }
 
   const newComment: IComment | null = await CommentModel.create({
@@ -22,14 +23,10 @@ const createComment = async (commentData: any) => {
     author,
   });
 
-  if (!newComment) {
-    return;
-  }
-
   post.comments?.push(newComment._id);
   await post.save();
 
-  return newComment;
+  return { comment: newComment };
 };
 
 const updateComment = async (commentData: any) => {
@@ -38,13 +35,13 @@ const updateComment = async (commentData: any) => {
   const user: IUser | null = await UserModel.findById(author);
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   const post: IPost | null = await PostModel.findById(postId);
 
   if (!post) {
-    return;
+    throw new AppError("Post not found", 404);
   }
 
   const updatedData = {
@@ -61,7 +58,14 @@ const updateComment = async (commentData: any) => {
     },
   ).populate("author", "username avatar");
 
-  return updatedComment;
+  if (!updatedComment) {
+    throw new AppError("Comment not found", 404);
+  }
+
+  return {
+    comment: updatedComment,
+    message: "Comment has successfully updated.",
+  };
 };
 
 const deleteComment = async (commentData: any) => {
@@ -70,15 +74,21 @@ const deleteComment = async (commentData: any) => {
   const post = await PostModel.findById(postId);
 
   if (!post) {
-    return;
+    throw new AppError("Post not found", 404);
   }
 
   const deletedComment: IComment | null =
     await CommentModel.findByIdAndDelete(commentId);
 
-  post.comments?.filter((id) => id != commentId);
+  if (!deletedComment) {
+    throw new AppError("Comment not found", 404);
+  }
 
-  return deletedComment;
+  post.comments = post.comments?.filter((id) => id.toString() !== commentId);
+
+  return {
+    message: "Comment successfully deleted.",
+  };
 };
 
 export default {

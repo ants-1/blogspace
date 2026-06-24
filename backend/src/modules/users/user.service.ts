@@ -76,7 +76,7 @@ const updateUser = async (userData: any) => {
   await user.save();
   const updatedUser = await UserModel.findById(id).select("-password");
 
-  return { user: updatedUser };
+  return { user: updatedUser, message: "User successfully updated" };
 };
 
 const updateUserPassword = async (userData: any) => {

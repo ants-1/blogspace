@@ -6,106 +6,51 @@ import {
   createCommentSchema,
   updateCommentSchema,
 } from "./comment.schema";
+import { createResponse } from "../../utils/createResponse";
+import asyncHandler from "express-async-handler";
 
-const createComment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { postId } = req.params;
-    const { content, author } = req.body;
-    const commentData = {
-      postId,
-      content,
-      author,
-    };
+const createComment = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const commentData = await createCommentSchema.parse({
+      postId: req.params.postId,
+      content: req.body.content,
+      author: req.body.author,
+    });
 
-    await createCommentSchema.parse(commentData);
+    const result = await commentService.createComment(commentData);
 
-    const comment = await commentService.createComment(commentData);
+    res.status(201).json(createResponse(true, result, null));
+  },
+);
 
-    if (!comment) {
-      return res.status(404).json({ error: "Post not found." });
-    }
+const updateComment = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const commentData = await updateCommentSchema.parse({
+      postId: req.params.postId,
+      commentId: req.params.commentId,
+      content: req.body.content,
+      author: req.body.author,
+    });
 
-    res.status(201).json(comment);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+    const result = await commentService.updateComment(commentData);
 
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-const updateComment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { postId, commentId } = req.params;
-    const { content, author } = req.body;
-    const commentData = {
-      postId,
-      commentId,
-      content,
-      author,
-    };
+const deleteComment = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const commentData = await deleteCommentSchema.parse({
+      commentId: req.params.commentId,
+      postId: req.params.postId,
+      author: req.body.author,
+    });
 
-    await updateCommentSchema.parse(commentData);
+    const result = await commentService.deleteComment(commentData);
 
-    const updatedComment = await commentService.updateComment(commentData);
-
-    if (!updatedComment) {
-      return res.status(404).json({ error: "Comment not found." });
-    }
-
-    res.status(200).json(updatedComment);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
-
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const deleteComment = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { commentId, postId } = req.params;
-    const { author } = req.body;
-    const commentData = {
-      commentId,
-      postId,
-      author,
-    };
-
-    await deleteCommentSchema.parse(commentData);
-
-    const deletedComment = await commentService.deleteComment(commentData);
-
-    if (!deletedComment) {
-      return res.status(404).json({ error: "Post not found." });
-    }
-
-    res.status(200).json({ message: "Comment has been successfully deleted." });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
-
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
 export default {
   createComment,
