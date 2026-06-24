@@ -7,6 +7,7 @@ import userRoutes from "./modules/users/user.routes";
 import postRoutes from "./modules/posts/post.routes";
 import commentRoutes from "./modules/comments/comment.routes";
 import reactionRoutes from "./modules/reaction/reaction.routes";
+import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
 
@@ -27,5 +28,8 @@ app.use("/users", userRoutes);
 app.use("/posts", postRoutes);
 app.use("/posts/:postId/comments", commentRoutes);
 app.use("/posts/:postId", reactionRoutes);
+
+// Global error handler
+app.use(errorHandler);
 
 export default app;

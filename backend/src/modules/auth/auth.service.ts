@@ -1,3 +1,4 @@
+import { AppError } from "../../exceptions/AppError";
 import { UserModel, IUser } from "../users/user.model";
 
 const register = async (userData: any) => {
@@ -8,7 +9,7 @@ const register = async (userData: any) => {
   });
 
   if (existingUser) {
-    throw new Error("Please select another username or email");
+    throw new AppError("User with this email or username already exists", 409);
   }
 
   const newUser: IUser | null = await UserModel.create({
@@ -32,16 +33,20 @@ const login = async (userData: any) => {
   }).select("+password");
 
   if (!user) {
-    throw new Error("Invalid credentials. Username not found.");
+    throw new AppError("Invalid credentials", 401);
   }
 
   const isPasswordValid: boolean = await user.comparePassword(password);
 
   if (!isPasswordValid) {
-    throw new Error("Invalid credentials. Password is not valid.");
+    throw new AppError("Invalid credentials", 401);
   }
 
-  return user;
+  return {
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+  };
 };
 
 export default {
