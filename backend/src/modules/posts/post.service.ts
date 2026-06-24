@@ -1,3 +1,4 @@
+import { AppError } from "../../exceptions/AppError";
 import { UserModel, IUser } from "../users/user.model";
 import { PostModel, IPost } from "./post.model";
 
@@ -6,7 +7,7 @@ const getPosts = async () => {
     .populate("likes", "username avatar")
     .populate("dislikes", "username avatar");
 
-  return posts;
+  return { posts };
 };
 
 const getPost = async (id: string) => {
@@ -21,7 +22,11 @@ const getPost = async (id: string) => {
       },
     });
 
-  return post;
+  if (!post) {
+    throw new AppError("Post not found", 404);
+  }
+
+  return { post };
 };
 
 const createPost = async (postData: any) => {
@@ -30,7 +35,7 @@ const createPost = async (postData: any) => {
   const user: IUser | null = await UserModel.findById(author);
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   const newPost: IPost | null = await PostModel.create({
@@ -40,10 +45,16 @@ const createPost = async (postData: any) => {
     author,
   });
 
-  return newPost;
+  return { post: newPost };
 };
 
 const updatePost = async (id: string, updatedData: any) => {
+  const user: IUser | null = await UserModel.findById(updatedData.author);
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
   const updatedPost: IPost | null = await PostModel.findByIdAndUpdate(
     id,
     updatedData,
@@ -56,13 +67,23 @@ const updatePost = async (id: string, updatedData: any) => {
     .populate("dislikes", "username avatar")
     .populate("author", "username avatar");
 
-  return updatedPost;
+  if (!updatedPost) {
+    throw new AppError("Post not found");
+  }
+
+  return { user: updatedPost };
 };
 
 const deletePost = async (id: string) => {
   const deletedPost: IPost | null = await PostModel.findByIdAndDelete(id);
 
-  return deletedPost;
+  if (!deletedPost) {
+    throw new AppError("Post not found", 404);
+  }
+
+  return {
+    message: "Post has been successfully deleted",
+  };
 };
 
 export default {

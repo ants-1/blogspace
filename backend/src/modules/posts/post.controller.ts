@@ -1,137 +1,63 @@
 import { Request, Response, NextFunction } from "express";
 import postService from "./post.service";
-import * as z from "zod";
 import { IdParams } from "../../types/types";
 import {
   createPostSchema,
   postIdSchema,
   updatePostSchema,
 } from "./post.schema";
+import asyncHandler from "express-async-handler";
+import { createResponse } from "../../utils/createResponse";
 
-const getPosts = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const posts = await postService.getPosts();
+const getPosts = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await postService.getPosts();
 
-    res.status(200).json(posts);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-const getPost = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    await postIdSchema.parse({ id });
+const getPost = asyncHandler(
+  async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    const { id } = await postIdSchema.parse(req.params);
 
-    const post = await postService.getPost(id);
+    const result = await postService.getPost(id);
 
-    if (!post) {
-      return res.status(404).json({ error: "Post not found." });
-    }
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-    res.status(200).json(post);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+const createPost = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const postData = await createPostSchema.parse(req.body);
 
-    res.status(500).json({ error: error.message });
-  }
-};
+    const result = await postService.createPost(postData);
 
-const createPost = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { title, content, featureImg, author } = req.body;
-    const postData = {
-      title,
-      content,
-      featureImg,
-      author,
-    };
-    await createPostSchema.parse(postData);
+    res.status(201).json(createResponse(true, result, null));
+  },
+);
 
-    const post = await postService.createPost(postData);
+const updatePost = asyncHandler(
+  async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    const { id } = postIdSchema.parse(req.params);
 
-    if (!post) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const updatedPostData = await updatePostSchema.parse(req.body);
 
-    res.status(201).json(post);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-      return res.status(400).json({ error: validationError });
-    }
+    const result = await postService.updatePost(id, updatedPostData);
 
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
-const updatePost = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-    const { title, content, featureImg } = req.body;
-    const postData = {
-      title,
-      content,
-      featureImg,
-    };
-    await updatePostSchema.parse(postData);
+const deletePost = asyncHandler(
+  async (req: Request<IdParams>, res: Response, next: NextFunction) => {
+    const { id } = await postIdSchema.parse(req.params);
 
-    const updatedPost = await postService.updatePost(id, postData);
+    const result = await postService.deletePost(id);
 
-    if (!updatedPost) {
-      return res.status(404).json({ error: "Post not found." });
-    }
-
-    res.status(200).json(updatedPost);
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-
-      return res.status(400).json({ error: validationError });
-    }
-
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const deletePost = async (
-  req: Request<IdParams>,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { id } = req.params;
-
-    await postIdSchema.parse({ id });
-
-    const deletedPost = await postService.deletePost(id);
-
-    if (!deletedPost) {
-      return res.status(404).json({ error: "Post not found." });
-    }
-
-    res.status(200).json({ message: "Post has been successfully deleted." });
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      const validationError = z.prettifyError(error);
-
-      return res.status(400).json({ error: validationError });
-    }
-
-    res.status(500).json({ error: error.message });
-  }
-};
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
 
 export default {
   getPost,
