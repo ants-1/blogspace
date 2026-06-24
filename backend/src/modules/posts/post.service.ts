@@ -11,7 +11,7 @@ const getPosts = async (page = 1, limit = 10) => {
     .skip(skip)
     .limit(limit);
 
-  const total = await UserModel.countDocuments();
+  const total = await PostModel.countDocuments();
 
   return {
     posts,
