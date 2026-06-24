@@ -1,18 +1,19 @@
 import { UserModel, IUser } from "../users/user.model";
 import { PostModel, IPost } from "../posts/post.model";
+import { AppError } from "../../exceptions/AppError";
 
 const toggleLikes = async (likesData: any) => {
   const { postId, userId } = likesData;
   const user: IUser | null = await UserModel.findById(userId);
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   const post: IPost | null = await PostModel.findById(postId);
 
   if (!post) {
-    return;
+    throw new AppError("Post not found", 404);
   }
 
   const alreadyLiked = post.likes?.includes(user._id);
@@ -30,13 +31,9 @@ const toggleLikes = async (likesData: any) => {
   await post.save();
 
   return {
-    success: true,
-    error: null,
-    data: {
-      liked: !alreadyLiked,
-      likesCount: post.likes?.length,
-      likes: post.likes,
-    },
+    liked: !alreadyLiked,
+    likesCount: post.likes?.length,
+    likes: post.likes,
   };
 };
 
@@ -45,13 +42,13 @@ const toggleDislikes = async (dislikesData: any) => {
   const user: IUser | null = await UserModel.findById(userId);
 
   if (!user) {
-    return;
+    throw new AppError("User not found", 404);
   }
 
   const post: IPost | null = await PostModel.findById(postId);
 
   if (!post) {
-    return;
+    throw new AppError("Post not found", 404);
   }
 
   const alreadyDisliked = post.dislikes?.includes(user._id);
@@ -69,13 +66,9 @@ const toggleDislikes = async (dislikesData: any) => {
   await post.save();
 
   return {
-    success: true,
-    error: null,
-    data: {
-      disliked: !alreadyDisliked,
-      dislikesCount: post.dislikes?.length,
-      dislikes: post.dislikes,
-    },
+    disliked: !alreadyDisliked,
+    dislikesCount: post.dislikes?.length,
+    dislikes: post.dislikes,
   };
 };
 

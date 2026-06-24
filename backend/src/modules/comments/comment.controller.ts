@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import * as z from "zod";
 import commentService from "./comment.service";
 import {
   deleteCommentSchema,
