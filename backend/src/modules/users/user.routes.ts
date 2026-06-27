@@ -1,14 +1,24 @@
 import express from "express";
 import userController from "./user.controller";
 import { rateLimiter } from "../../middleware/rateLimit.middleware";
+import { authenticateToken } from "../../middleware/auth.middleware";
 
 const router = express.Router();
 
 // User routes
+
+// Public
 router.get("/", rateLimiter, userController.getUsers);
 router.get("/:id", rateLimiter, userController.getUser);
-router.put("/:id", rateLimiter, userController.updateUser);
-router.put("/:id/password", rateLimiter, userController.updateUserPassword);
+
+// Private
+router.put("/:id", rateLimiter, authenticateToken, userController.updateUser);
+router.put(
+  "/:id/password",
+  rateLimiter,
+  authenticateToken,
+  userController.updateUserPassword,
+);
 
 // Following/Followers routes
 router.get("/:id/followers", rateLimiter, userController.getFollowers);

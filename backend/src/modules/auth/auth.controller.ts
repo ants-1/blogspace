@@ -10,6 +10,7 @@ import { UserModel } from "../users/user.model";
 import { createResponse } from "../../utils/createResponse";
 import asyncHandler from "express-async-handler";
 import { AppError } from "../../exceptions/AppError";
+import { redis } from "../../config/redis";
 
 const register = asyncHandler(
   async (req: Request, res: Response, _next: NextFunction) => {
@@ -39,6 +40,11 @@ const login = asyncHandler(
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // Save refresh token
+    await redis.set(`refresh:${result._id}`, refreshToken, {
+      EX: 7 * 24 * 60 * 60,
+    });
+
     res
       .status(200)
       .json(createResponse(true, { user: result, token: accessToken }, null));
@@ -46,7 +52,35 @@ const login = asyncHandler(
 );
 
 const logout = asyncHandler(
-  async (_req: Request, res: Response, _next: NextFunction) => {
+  async (req: Request, res: Response, _next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader?.split(" ")[1];
+    const refreshToken = req.cookies.refreshToken;
+
+    // Blacklist access token
+    if (accessToken) {
+      const decoded = jwt.decode(accessToken) as JwtPayload;
+
+      if (decoded?.exp) {
+        const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+
+        if (expiresIn > 0) {
+          await redis.set(`blacklist:${accessToken}`, "true", {
+            EX: expiresIn,
+          });
+        }
+      }
+    }
+
+    // Remove refresh token from Redis
+    if (refreshToken) {
+      const decoded = jwt.decode(refreshToken) as JwtPayload;
+
+      if (decoded?.id) {
+        await redis.del(`refresh:${decoded.id}`);
+      }
+    }
+
     res.clearCookie("refreshToken", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -65,18 +99,45 @@ const refresh = asyncHandler(
       throw new AppError("No token provided", 401);
     }
 
-    const payload = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET as string,
-    ) as JwtPayload;
+    let payload: JwtPayload;
+
+    try {
+      payload = jwt.verify(
+        refreshToken,
+        process.env.JWT_REFRESH_SECRET as string,
+      ) as JwtPayload;
+    } catch {
+      throw new AppError("Invalid refresh token", 401);
+    }
+
+    const storedToken = await redis.get(`refresh:${payload.id}`);
+
+    if (!storedToken || storedToken !== refreshToken) {
+      throw new AppError("Invalid refresh token", 401);
+    }
 
     const user = await UserModel.findById(payload.id);
 
     if (!user) {
-      throw new AppError("Invalid token", 403);
+      throw new AppError("User not found", 404);
     }
 
+    // Generate new tokens
     const newAccessToken = await generateAccessToken(user);
+    const newRefreshToken = await generateRefreshToken(user);
+
+    // Replace refresh token in Redis
+    await redis.set(`refresh:${user._id}`, newRefreshToken, {
+      EX: 7 * 24 * 60 * 60,
+    });
+
+    // Replace refresh token cookie
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json(createResponse(true, { token: newAccessToken }, null));
   },

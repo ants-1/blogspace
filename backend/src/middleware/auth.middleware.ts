@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { Types } from "mongoose";
+import { redis } from "../config/redis";
+import { createResponse } from "../utils/createResponse";
 
 interface AuthRequest extends Request {
-  user: string | JwtPayload | undefined;
+  user?: string | JwtPayload | undefined;
 }
 
 interface TokenUser {
@@ -30,15 +32,22 @@ export const authenticateToken = async (
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
-    return res.status(403).json({ error: "Unauthorized" });
+    return res.status(401).json(createResponse(false, null, "Unauthorized"));
+  }
+
+  const blacklisted = await redis.get(`blacklist:${token}`);
+
+  if (blacklisted) {
+    return res.status(401).json(createResponse(false, null, "Token revoked"));
   }
 
   jwt.verify(token, process.env.JWT_ACCESS_SECRET as string, (error, user) => {
     if (error) {
-      return res.status(403).json({ error: "Unauthorized" });
+      return res.status(401).json(createResponse(false, null, "Unauthorized"));
     }
 
     req.user = user;
+
     next();
   });
 };
