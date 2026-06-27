@@ -8,6 +8,7 @@ import {
 } from "./post.schema";
 import asyncHandler from "express-async-handler";
 import { createResponse } from "../../utils/createResponse";
+import { uploadImage } from "../../utils/uploadHelper";
 
 const getPosts = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -34,7 +35,17 @@ const createPost = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const postData = await createPostSchema.parse(req.body);
 
-    const result = await postService.createPost(postData);
+    let featureImgUrl = "";
+
+    if (req.file) {
+      const uploaded = await uploadImage(req.file.buffer);
+      featureImgUrl = uploaded.secure_url;
+    }
+
+    const result = await postService.createPost({
+      ...postData,
+      featureImg: featureImgUrl,
+    });
 
     res.status(201).json(createResponse(true, result, null));
   },
