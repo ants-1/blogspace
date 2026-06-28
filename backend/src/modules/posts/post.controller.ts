@@ -21,6 +21,14 @@ const getPosts = asyncHandler(
   },
 );
 
+const getPopularPosts = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await postService.getPopularPosts();
+
+    res.status(200).json(createResponse(true, result, null));
+  },
+);
+
 const getPost = asyncHandler(
   async (req: Request<IdParams>, res: Response, next: NextFunction) => {
     const { id } = await postIdSchema.parse(req.params);
@@ -76,6 +84,7 @@ const deletePost = asyncHandler(
 export default {
   getPost,
   getPosts,
+  getPopularPosts,
   createPost,
   updatePost,
   deletePost,

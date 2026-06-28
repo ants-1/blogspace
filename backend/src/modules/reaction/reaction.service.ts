@@ -1,6 +1,7 @@
 import { UserModel, IUser } from "../users/user.model";
 import { PostModel, IPost } from "../posts/post.model";
 import { AppError } from "../../exceptions/AppError";
+import { redis } from "../../config/redis";
 
 const toggleLikes = async (likesData: any) => {
   const { postId, userId } = likesData;
@@ -29,6 +30,24 @@ const toggleLikes = async (likesData: any) => {
   }
 
   await post.save();
+
+  // Update likes in cache if exists
+  const cached = await redis.get("popular_posts");
+
+  if (cached) {
+    const posts = JSON.parse(cached);
+
+    const index = posts.findIndex((p: any) => p._id.toString() === postId);
+
+    if (index !== -1) {
+      posts[index].likes = post.likes;
+      posts[index].likesCount = post.likes?.length;
+
+      posts.sort((a: any, b: any) => b.likesCount - a.likesCount);
+
+      await redis.setEx("popular_posts", 300, JSON.stringify(posts));
+    }
+  }
 
   return {
     liked: !alreadyLiked,

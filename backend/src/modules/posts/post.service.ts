@@ -1,3 +1,4 @@
+import { redis } from "../../config/redis";
 import { AppError } from "../../exceptions/AppError";
 import { UserModel, IUser } from "../users/user.model";
 import { PostModel, IPost } from "./post.model";
@@ -22,6 +23,48 @@ const getPosts = async (page = 1, limit = 10) => {
       pages: Math.ceil(total / limit),
     },
   };
+};
+
+const getPopularPosts = async () => {
+  const cacheKey = "popular_posts";
+
+  // Check cache first
+  const cachedPosts = await redis.get(cacheKey);
+
+  if (cachedPosts) {
+    return JSON.parse(cachedPosts);
+  }
+
+  console.log("Cache miss");
+
+  const posts = await PostModel.aggregate([
+    {
+      $addFields: {
+        likesCount: { $size: "$likes" },
+      },
+    },
+    {
+      $sort: {
+        likesCount: -1,
+        createdAt: -1,
+      },
+    },
+    {
+      $limit: 10,
+    },
+  ]);
+
+  // Populate author if needed
+  await PostModel.populate(posts, [
+    { path: "author", select: "username avatar" },
+    { path: "likes", select: "username avatar" },
+    { path: "dislikes", select: "username avatar" },
+  ]);
+
+  // Cache for 5 minutes
+  await redis.setEx(cacheKey, 300, JSON.stringify(posts));
+
+  return posts;
 };
 
 const getPost = async (id: string) => {
@@ -103,6 +146,7 @@ const deletePost = async (id: string) => {
 export default {
   getPosts,
   getPost,
+  getPopularPosts,
   createPost,
   updatePost,
   deletePost,

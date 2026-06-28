@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Public
 router.get("/", postController.getPosts);
+router.get("/popular", postController.getPopularPosts);
 router.get("/:id", postController.getPost);
 
 // Protected
